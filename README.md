@@ -1,35 +1,40 @@
-# Spotify Accounts Authentication Examples
+# Spotify Accounts Stats Mining Web App
 
-This project contains basic demos showing the different OAuth 2.0 flows for [authenticating against the Spotify Web API](https://developer.spotify.com/web-api/authorization-guide/).
-
-These examples cover:
-
-* Authorization Code flow
-* Client Credentials flow
-* Implicit Grant flow
+This project is meant for crowdsourcing music engagement data from multiple music streaming platforms. It was built on top of the the Web Auth example from the Spotify API documentaion, which can be found [here](https://developer.spotify.com/web-api/authorization-guide/).
 
 ## Installation
 
-These examples run on Node.js. On [its website](http://www.nodejs.org/download/) you can find instructions on how to install it. You can also follow [this gist](https://gist.github.com/isaacs/579814) for a quick and easy way to install Node.js and npm.
+### A) Create an application on Spotify API
+Create an application on the [Spotify API dashboard](https://developer.spotify.com/dashboard/applications), then copy the credentials (**client_id**, **client_secret**), and provide the **redirect URI** for the web application to host this service.
 
-Once installed, clone the repository and install its dependencies running:
+### B) Environment Configuration
 
-    $ npm install
+create a **.env** file in the root of the project folder for server configuration, using the following template:
+ 
+```
+SPOTIFY_CLIENT_ID=<your_spotify_client_id_here>
+SPOTIFY_CLIENT_SECRET=<your_spotify_client_secret_here>
+SPOTIFY_REDIRECT_URI=<your_spotify_redirect_uri>
+```
 
-### Using your own credentials
-You will need to register your app and get your own credentials from the Spotify for Developers Dashboard.
+### C) Install dependencies 
 
-To do so, go to [your Spotify for Developers Dashboard](https://beta.developer.spotify.com/dashboard) and create your application. For the examples, we registered these Redirect URIs:
+run **npm install** in the project's root folder from the terminal to install the project's dependencies.
 
-* http://localhost:8888 (needed for the implicit grant flow)
-* http://localhost:8888/callback
+### D) Running the web app
+To run this project on your local machine, make sure the **SPOTIFY_REDIRECT_URI** variable in the **.env** is using "**http://localhost:8888/callback**". You can chose whichever port number you like.
 
-Once you have created your app, replace the `client_id`, `redirect_uri` and `client_secret` in the examples with the ones you get from My Applications.
+now enter the following command in your terminal:
+```
+npm start
+```
 
-## Running the examples
-In order to run the different examples, open the folder with the name of the flow you want to try out, and run its `app.js` file. For instance, to run the Authorization Code example do:
+If you'd like to make changes to the code while the server is still running, run the server in this manner:
+```
+nodemon start
+```
 
-    $ cd authorization_code
-    $ node app.js
+Go to your browser and type **http://localhost:8888**, then click the "Login with Spotify" button to start the mining process.
 
-Then, open `http://localhost:8888` in a browser.
+### E) Accessing the datasets mined from web app
+To get a zipped copy of the datasets accumulated by the app, type **http://localhost:8888/general/datasets**. This will start the download on your browser, and you can unzip the file with a utility like Keka or WinRar.

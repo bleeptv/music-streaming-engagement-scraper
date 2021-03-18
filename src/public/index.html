@@ -1,0 +1,262 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Example of the Authorization Code flow with Spotify</title>
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" type="text/css" href="styles.css">
+  <link rel="stylesheet" type="text/css" href="modal.css">
+</head>
+
+<body>
+  <div class="container">
+    <div id="login">
+      <h1 id="login-title">View your music engagement on major music platforms</h1>
+      <a href="/login" class="btn btn-primary" id="spotify-login"> Log in with Spotify</a>
+    </div>
+    <div id="loading">
+      <div class="progress-line"></div>
+    </div>
+    <div id="loggedin">
+      <div id="user-profile"></div>
+    </div>
+    <!-- Modal -->
+    <div id="stats-modal" class="modal">
+      <!-- Modal content -->
+      <div class="modal-content">
+        <span class="close" onclick="hideModal()">&times;</span>
+        <ol id="stat-list"></ol>
+      </div>
+    </div>
+  </div>
+
+  <script id="user-profile-template" type="text/x-handlebars-template">
+    <h2 id="stats-title">{{display_name}}'s {{music_platform_name}} Stats</h2>
+      <div class="media">
+        <div class="pull-left">
+          <img class="media-object" width="150" src={{photo_url}} alt=""/>
+          <img class="media-object app-logo" src="{{platform_icon_url}}"  />
+        </div>
+        <div class="media-body">
+          
+          <section>
+            <dl>
+              <dt><h4 class="topic_header">Total Followers</h4></dt><dd>{{total_followers}}</dd>
+              <dt><h4 class="topic_header">Total Playlists In Library</h4></dt><dd>{{playlist_stats.total_playlist_count}}</dd>
+              <dt><h4 class="topic_header">Total Playlists Created</h4></dt><dd>{{playlist_stats.total_created_playlist_count}}</dd>
+              <dt><h4 class="topic_header">Total Playlists Saved</h4></dt><dd>{{playlist_stats.total_saved_playlist_count}}</dd>
+              <dt><h4 class="topic_header">Total Tracks In Playlists</h4></dt><dd>{{playlist_stats.total_tracks_count}}</dd>
+            </dl>
+          </section>
+
+          <section>
+              <dl>
+                <dt><h4 class="topic_header">Total Genres in Playlists</h4></dt><dd>{{music_taste_stats.total_genres_general}}</dd>
+                <dt><h4 class="topic_header">Total Genres in Recent Playback</h4></dt><dd>{{music_taste_stats.total_genres_recently}}</dd>
+                <dt><h4 class="topic_header">Total Followers on Your Playlists</h4></dt><dd>{{playlist_stats.total_playlist_followers_count}}</dd>
+                <dt><h4 class="topic_header">Total Followed Artists</h4></dt><dd>{{total_artist_follow_count}}</dd>
+                <dt><h4 class="topic_header">Average Popularity of the artists you follow</h4></dt><dd>{{artist_follow_average_popularity}}<span class="small-denom">/100</span></dd>
+              </dl>
+
+            </section>
+            <section>
+              <h4 class="topic_header">Music Genre You're Into Generally</h4>
+                <ul>
+                  {{#each music_taste_stats.top_general_music_genres}}
+                      <li><strong>{{ this }} {{ @key }}</strong> songs<strong></strong></li>
+                  {{/each}}
+                  <li><a onclick="showModal('top_general_music_genres', true)">View All</a></li>
+                </ul>
+
+              <h4 class="topic_header">Music Genre You're Into Recently</h4>
+              <ul>
+                {{#each music_taste_stats.top_recent_music_genres}}
+                      <li><strong>{{ this }} {{ @key }}</strong> songs<strong></strong></li>
+                  {{/each}}
+                  <li><a onclick="showModal('top_recent_music_genres', false)">View All</a></li>
+              </ul>
+
+              <h4 class="topic_header">Songs you listen to often</h4>
+              <ul>
+                {{#each music_taste_stats.top_recently_played}}
+                      <li><strong>{{ @key }}</strong> (played <strong>{{ this }}</strong> times)</li>
+                  {{/each}}
+                  <li><a onclick="showModal('top_recently_played', false)">View All</a></li>
+              </ul>
+            </section>
+        </div>
+      </div>
+    </script>
+
+  <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
+  <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+  <script>
+    (function () {
+
+      /**
+       * Obtains parameters from the hash of the URL
+       * @return Object
+       */
+      function getHashParams() {
+        var hashParams = {};
+        var e, r = /([^&;=]+)=?([^&;]*)/g,
+          q = window.location.hash.substring(1);
+        while (e = r.exec(q)) {
+          hashParams[e[1]] = decodeURIComponent(e[2]);
+        }
+        return hashParams;
+      }
+
+      Handlebars.registerHelper('json', function(context) {
+        return JSON.stringify(context);
+      });
+
+      const OBJECT_TRUNCATE_LIMIT = 4;
+
+      const truncateObject = (obj, truncateLimit) => {
+        const objectSize = Object.keys(obj).length;
+        const endIndex = truncateLimit == 0 ? objectSize : Math.min(truncateLimit, objectSize);
+        const sliced = Object.keys(obj).slice(0, endIndex).reduce((result, key) => {
+            result[key] = obj[key];
+            return result;
+        }, {});
+
+        return sliced;
+      };
+
+      const songTemplate = (song, times) => `<li><strong>${song}</strong> (played <strong>${times}</strong> times)</li>`;
+      const genreTemplate = (genre, times) => `<li><strong>${times} ${genre}</strong> songs</li>`;
+
+      const showModal = (key, isRecentItem = false) => {
+        const chosenTemplate = isRecentItem ? genreTemplate : songTemplate;
+        const currentObject = currentResponse["music_taste_stats"][key];
+        Object.entries(currentObject).forEach((item, value) => {
+          $('#stat-list').append(chosenTemplate(item[0], item[1]))
+        });
+
+        $('#stats-modal').show();
+      }
+
+      const hideModal = () => {
+        $('#stats-modal').hide();
+        $('#stat-list').empty();
+      }
+
+      var userProfileSource = document.getElementById('user-profile-template').innerHTML,
+        userProfileTemplate = Handlebars.compile(userProfileSource),
+        userProfilePlaceholder = document.getElementById('user-profile');
+
+      var params = getHashParams();
+
+      const access_token = params.access_token,
+        refresh_token = params.refresh_token,
+        error = params.error;
+
+      let photoUrl;
+      let displayName;
+      let followers;
+      let userId;
+      let musicPlatformIconUrl;
+      let musicPlatformName;
+      let currentResponse;
+
+      const getSpotifyUserDetails = () => {
+
+        musicPlatformIconUrl = "https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_White.png";
+        musicPlatformName = "Spotify";
+
+        $.ajax({
+          url: 'https://api.spotify.com/v1/me',
+          headers: {
+            'Authorization': 'Bearer ' + access_token
+          },
+          success: (response) => {
+            userId = response["id"];
+            followers = response["followers"]["total"];
+            photoUrl = response["images"][0]["url"];
+            displayName = response["display_name"];
+
+            getMusicEngagment();
+          }
+        });
+      };
+
+      const getMusicEngagment = () => {
+
+        $('#loading').show();
+        console.log("Getting music engagement now...");
+
+        $.ajax({
+          url: `/spotify/engagement?userId=${userId}`,
+          headers: {
+            'Authorization': 'Bearer ' + access_token
+          },
+          success: function (response) {
+            response["photo_url"] = photoUrl;
+            response["display_name"] = displayName;
+            response["total_followers"] = followers;
+            response["platform_icon_url"] = musicPlatformIconUrl;
+            response["music_platform_name"] = musicPlatformName;
+
+            currentResponse = response;
+            const truncatedResponse = JSON.parse(JSON.stringify(currentResponse));
+
+            truncatedResponse.music_taste_stats.top_general_music_genres = truncateObject(truncatedResponse.music_taste_stats.top_general_music_genres, OBJECT_TRUNCATE_LIMIT);
+            truncatedResponse.music_taste_stats.top_recent_music_genres = truncateObject(truncatedResponse.music_taste_stats.top_recent_music_genres, OBJECT_TRUNCATE_LIMIT);
+            truncatedResponse.music_taste_stats.top_recently_played = truncateObject(truncatedResponse.music_taste_stats.top_recently_played, OBJECT_TRUNCATE_LIMIT);
+
+            console.log(JSON.stringify(currentResponse));
+            
+            userProfilePlaceholder.innerHTML = userProfileTemplate(truncatedResponse);
+
+            $('#loading').hide();
+            $('#login').hide();
+            $('#loggedin').show();
+          },
+          error: (error) => {
+            console.log("Error getting engagement data: ", error);
+
+            $('#loading').hide();
+            if (confirm("Your token seems to have expired. Refresh your token and try again")) {
+              refreshTokenFunction();
+            }
+          }
+        });
+      };
+
+      const refreshTokenFunction = () => {
+        console.log("Refreshing token...")
+        $.ajax({
+          url: '/refresh_token',
+          data: {
+            'refresh_token': refresh_token
+          },
+          success: (response) => {
+            access_token = data.access_token;
+            window.location.reload();
+          }
+        });
+      };
+
+
+      if (error) {
+        alert('There was an error during the authentication');
+      } else {
+        if (access_token) {
+          getSpotifyUserDetails();
+        } else {
+          // render initial screen
+          $('#login').show();
+          $('#loading').hide();
+          $('#loggedin').hide();
+        }
+      }
+
+      window.showModal = showModal;
+      window.hideModal = hideModal;
+    })();
+  </script>
+</body>
+
+</html>
