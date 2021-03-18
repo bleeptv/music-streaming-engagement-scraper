@@ -212,7 +212,7 @@ class SpotifyApiClient {
     const artistDataCollection = [];
 
     var options = {
-      url: `${endpointUrl}/me/following?type=artist`,
+      url: `${endpointUrl}/me/following?type=artist&limit=50`,
       headers: {
         'Authorization': 'Bearer ' + userDetailsHolder.access_token
       },
@@ -227,7 +227,7 @@ class SpotifyApiClient {
 
         const followedArtistsResult = body["artists"];
 
-        if(followedArtistsResult !== null && followedArtistsResult.length > 0) {
+        if(followedArtistsResult !== null && followedArtistsResult["items"].length > 0) {
           const followedArtists = body["artists"]["items"];
 
           followedArtists.forEach(artist => {
