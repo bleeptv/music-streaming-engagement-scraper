@@ -13,5 +13,5 @@ Please describe the tests that you ran to verify your changes. Please also note 
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation
 - [ ] My changes generate no new warnings
-- [ ] Mu changes have been tested via automated unit/integration/regression tests
+- [ ] My changes have been tested via automated unit/integration/regression tests
 - [ ] Any dependent changes have been merged and published in downstream modules
