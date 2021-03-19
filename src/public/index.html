@@ -174,7 +174,9 @@
           success: (response) => {
             userId = response["id"];
             followers = response["followers"]["total"];
-            photoUrl = response["images"][0]["url"];
+
+            const photoObject = response["images"];
+            photoUrl = photoObject !== null && photoObject.length > 0 ? photoObject[0]["url"] : "";
             displayName = response["display_name"];
 
             getMusicEngagment();
@@ -205,8 +207,6 @@
             truncatedResponse.music_taste_stats.top_general_music_genres = truncateObject(truncatedResponse.music_taste_stats.top_general_music_genres, OBJECT_TRUNCATE_LIMIT);
             truncatedResponse.music_taste_stats.top_recent_music_genres = truncateObject(truncatedResponse.music_taste_stats.top_recent_music_genres, OBJECT_TRUNCATE_LIMIT);
             truncatedResponse.music_taste_stats.top_recently_played = truncateObject(truncatedResponse.music_taste_stats.top_recently_played, OBJECT_TRUNCATE_LIMIT);
-
-            console.log(JSON.stringify(currentResponse));
             
             userProfilePlaceholder.innerHTML = userProfileTemplate(truncatedResponse);
 

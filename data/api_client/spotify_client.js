@@ -40,16 +40,21 @@ class SpotifyApiClient {
         const savedPlaylists = [];
         const playlistIds = new Set();
 
-        playlists.forEach(playlist => {
-          if(playlist["owner"]["id"] === userDetailsHolder.userId) {
-            createdPlaylists.push(playlist);
-          } else {
-            savedPlaylists.push(playlist);
-          }
+        if(playlists !== null && playlists.length > 0) {
+          playlists.forEach(playlist => {
+            if(playlist["owner"]["id"] === userDetailsHolder.userId) {
+              createdPlaylists.push(playlist);
+            } else {
+              savedPlaylists.push(playlist);
+            }
+  
+            playlistIds.add(playlist["id"]);
+            totalTracksCount += playlist["tracks"]["total"];
+          });
 
-          playlistIds.add(playlist["id"]);
-          totalTracksCount += playlist["tracks"]["total"];
-        });
+          dataManager.saveFile(`spotify/${userDetailsHolder.userId}/playlists` , "created", createdPlaylists);
+          dataManager.saveFile(`spotify/${userDetailsHolder.userId}/playlists` , "saved", savedPlaylists);
+        }
 
         const playlistResult = {
           totalCreatedPlaylistCount: createdPlaylists.length,
@@ -60,9 +65,6 @@ class SpotifyApiClient {
         };
 
         onComplete(null, playlistResult);
-
-        dataManager.saveFile(`spotify/${userDetailsHolder.userId}/playlists` , "created", createdPlaylists);
-        dataManager.saveFile(`spotify/${userDetailsHolder.userId}/playlists` , "saved", savedPlaylists);
       }
     });
   }
@@ -88,10 +90,13 @@ class SpotifyApiClient {
       if (error) {
         onComplete(error, null);
       } else {
-        const musicTracks = body["items"];
-        onComplete(null, self.extractMusicTrackDetails(musicTracks));
+        const musicTracks = body["items"] !== null ? body["items"] : [];
 
-        dataManager.saveFile("spotify/"+userDetailsHolder.userId, `playlist_${playlistId}_tracks`, body);
+        if(musicTracks.length > 0) {
+          dataManager.saveFile("spotify/"+userDetailsHolder.userId, `playlist_${playlistId}_tracks`, body);
+        }
+
+        onComplete(null, self.extractMusicTrackDetails(musicTracks));
       }
 
     });
@@ -118,9 +123,11 @@ class SpotifyApiClient {
       if(error) {
         onComplete(error, null);
       } else {
-        const musicTracks = body["items"];
+        const musicTracks = body["items"] !== null ? body["items"] : [];
+        if(musicTracks.length > 0) {
+          dataManager.saveFile(`spotify/${userDetailsHolder.userId}` , "recently_played_tracks", body);
+        }
         onComplete(null, self.extractMusicTrackDetails(musicTracks));
-        dataManager.saveFile(`spotify/${userDetailsHolder.userId}` , "recently_played_tracks", body);
       }
     });
   }
@@ -133,6 +140,11 @@ class SpotifyApiClient {
    */
   getMusicGenresPerArtist(userDetailsHolder, musicArtistIdsString, onComplete, playlistType = "") {
     const genreCollection = [];
+
+    if(musicArtistIdsString.length == 0) {
+      onComplete(null, genreCollection);
+      return;
+    }
 
     var options = {
       url: `${endpointUrl}/artists?ids=${encodeURIComponent(musicArtistIdsString)}`,
@@ -148,14 +160,18 @@ class SpotifyApiClient {
         onComplete(error, null);
       } else {
         const artistsResult = body["artists"];
-        artistsResult.forEach(artist => {
-          artist["genres"].forEach(genre => {
-            genreCollection.push(genre);
-          })
-        });
 
+        if(artistsResult !== null && artistsResult.length > 0) {
+          artistsResult.forEach(artist => {
+            artist["genres"].forEach(genre => {
+              genreCollection.push(genre);
+            })
+          });
+          dataManager.saveFile(`spotify/${userDetailsHolder.userId}` , `artists_${playlistType}`, body);
+        }
+      
         onComplete(null, genreCollection);
-        dataManager.saveFile(`spotify/${userDetailsHolder.userId}` , `artists_${playlistType}`, body);
+        
       }
     });
 
@@ -180,7 +196,8 @@ class SpotifyApiClient {
       if(error) {
         onComplete(error, null);
       } else {
-        onComplete(null, body["followers"]["total"]);
+        const followers = body["followers"] !== null ? body["followers"]["total"] : [];
+        onComplete(null, followers);
       }
     });
   }
@@ -195,7 +212,7 @@ class SpotifyApiClient {
     const artistDataCollection = [];
 
     var options = {
-      url: `${endpointUrl}/me/following?type=artist`,
+      url: `${endpointUrl}/me/following?type=artist&limit=50`,
       headers: {
         'Authorization': 'Bearer ' + userDetailsHolder.access_token
       },
@@ -207,20 +224,26 @@ class SpotifyApiClient {
       if(error) {
         onComplete(error, null);
       } else {
-        const followedArtists = body["artists"]["items"];
 
-        followedArtists.forEach(artist => {
-          const artistDetails = {
-            name: artist["name"],
-            followers: artist["followers"]["total"],
-            popularity: artist["popularity"],
-          };
+        const followedArtistsResult = body["artists"];
 
-          artistDataCollection.push(artistDetails);
-        });
+        if(followedArtistsResult !== null && followedArtistsResult["items"].length > 0) {
+          const followedArtists = body["artists"]["items"];
 
+          followedArtists.forEach(artist => {
+            const artistDetails = {
+              name: artist["name"],
+              followers: artist["followers"]["total"],
+              popularity: artist["popularity"],
+            };
+
+            artistDataCollection.push(artistDetails);
+          });
+
+          dataManager.saveFile(`spotify/${userDetailsHolder.userId}` , "followed_artists", body);
+        }
+        
         onComplete(null, artistDataCollection);
-        dataManager.saveFile(`spotify/${userDetailsHolder.userId}` , "followed_artists", body);
       }
     });
   }
