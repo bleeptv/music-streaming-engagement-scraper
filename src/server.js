@@ -175,5 +175,7 @@ app.get("/general/datasets", (req, res, next) => {
 
 });
 
-console.log('Listening on 8888');
-app.listen(8888);
+const portNumber = process.env.PORT || 8888;
+app.listen(portNumber, () => {
+  console.log('Listening on '+ portNumber);
+});
