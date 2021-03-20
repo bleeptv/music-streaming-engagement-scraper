@@ -37,6 +37,7 @@
         <div class="pull-left">
           <img class="media-object" width="150" src={{photo_url}} alt=""/>
           <img class="media-object app-logo" src="{{platform_icon_url}}"  />
+          <button id="logout-btn" onclick="logout()">Logout</button>
         </div>
         <div class="media-body">
           
@@ -54,7 +55,7 @@
               <dl>
                 <dt><h4 class="topic_header">Total Genres in Playlists</h4></dt><dd>{{music_taste_stats.total_genres_general}}</dd>
                 <dt><h4 class="topic_header">Total Genres in Recent Playback</h4></dt><dd>{{music_taste_stats.total_genres_recently}}</dd>
-                <dt><h4 class="topic_header">Total Followers on Your Playlists</h4></dt><dd>{{playlist_stats.total_playlist_followers_count}}</dd>
+                <dt><h4 class="topic_header">Total Followers in saved playlists</h4></dt><dd>{{playlist_stats.total_playlist_followers_count}}</dd>
                 <dt><h4 class="topic_header">Total Followed Artists</h4></dt><dd>{{total_artist_follow_count}}</dd>
                 <dt><h4 class="topic_header">Average Popularity of the artists you follow</h4></dt><dd>{{artist_follow_average_popularity}}<span class="small-denom">/100</span></dd>
               </dl>
@@ -149,9 +150,17 @@
 
       var params = getHashParams();
 
-      const access_token = params.access_token,
-        refresh_token = params.refresh_token,
+      let spotify_access_token = params.access_token,
+        spotify_refresh_token = params.refresh_token,
         error = params.error;
+
+      if(spotify_access_token !== undefined) {
+        localStorage && (localStorage.spotify_token = spotify_access_token);
+      }
+
+      if(spotify_refresh_token !== undefined) {
+        localStorage && (localStorage.spotify_refresh_token = spotify_refresh_token);
+      }
 
       let photoUrl;
       let displayName;
@@ -180,9 +189,28 @@
             displayName = response["display_name"];
 
             getMusicEngagment();
+          },
+          error: (error) => {
+            const errorDetails = error.responseJSON.error;
+            console.log("Error occured while getting user details: ", errorDetails);
+
+            if(errorDetails.status === 401 && (errorDetails.message === "The access token expired")) {
+              console.log("Error occured while getting user details: ", error);
+              refreshTokenFunction();
+            } else {
+              console.log("Check all the error signs again: ", error);
+            }
           }
         });
       };
+
+      const logout = () => {
+        if(confirm("To sign in with a different account, clear all cookies from 'https://accounts.spotify.com/' on your browser.")) {
+          localStorage && (localStorage.removeItem("spotify_token"));
+          localStorage && (localStorage.removeItem("spotify_refresh_token"));
+          window.location.reload();
+        }
+      }
 
       const getMusicEngagment = () => {
 
@@ -218,32 +246,48 @@
             console.log("Error getting engagement data: ", error);
 
             $('#loading').hide();
-            if (confirm("Your token seems to have expired. Refresh your token and try again")) {
-              refreshTokenFunction();
+            if (confirm("An error occured while getting your stats. Would you like to reload?")) {
+              getMusicEngagment();
             }
           }
         });
       };
 
       const refreshTokenFunction = () => {
-        console.log("Refreshing token...")
         $.ajax({
           url: '/refresh_token',
           data: {
             'refresh_token': refresh_token
           },
           success: (response) => {
-            access_token = data.access_token;
+            localStorage && (localStorage.spotify_token = response.access_token)
             window.location.reload();
+          },
+          error: (errorResponse) => {
+            if (confirm("There seems to be an error getting your stats. Please login in again")) {
+              localStorage && (localStorage.removeItem("spotify_token"));
+              localStorage && (localStorage.removeItem("spotify_refresh_token"));
+            }
           }
         });
       };
 
+      let access_token;
+      if (localStorage && 'spotify_token' in localStorage) {
+        access_token = localStorage.spotify_token;
+      }
 
+      let refresh_token;
+      if (localStorage && 'spotify_refresh_token' in localStorage) {
+        refresh_token = localStorage.spotify_refresh_token;
+      }
+
+      history.pushState(null, null, ' ');
+  
       if (error) {
         alert('There was an error during the authentication');
       } else {
-        if (access_token) {
+        if (access_token !== undefined) {
           getSpotifyUserDetails();
         } else {
           // render initial screen
@@ -255,6 +299,8 @@
 
       window.showModal = showModal;
       window.hideModal = hideModal;
+      window.logout = logout;
+
     })();
   </script>
 </body>
