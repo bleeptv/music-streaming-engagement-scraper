@@ -7,11 +7,11 @@ class UserDetailsHolder {
 
     /**
      * Initialize new instance of User details holder
-     * @param {String} access_token 
+     * @param {String} accessToken 
      * @param {String} userId 
      */
-    constructor(access_token, userId){
-        this.access_token = access_token;
+    constructor(accessToken, userId){
+        this.accessToken = accessToken;
         this.userId = userId;
         this.hashedUserId = crypto.createHash('md5').update(userId).digest('hex');
     }

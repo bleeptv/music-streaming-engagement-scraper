@@ -101,14 +101,14 @@ app.get('/callback', function (req, res, next) {
     request.post(authOptions, function (error, response, body) {
       if (!error && response.statusCode === 200) {
 
-        const access_token = body["access_token"];
-        const refresh_token = body["refresh_token"];
+        const accessToken = body["access_token"];
+        const refreshToken = body["refresh_token"];
 
         // we can also pass the token to the browser to make requests from there
         res.redirect('/#' +
           querystring.stringify({
-            access_token: access_token,
-            refresh_token: refresh_token
+            access_token: accessToken,
+            refresh_token: refreshToken
           }));
       } else {
         res.redirect('/' +
@@ -138,9 +138,9 @@ app.get('/refresh_token', function (req, res, next) {
 
   request.post(authOptions, function (error, response, body) {
     if (!error && response.statusCode === 200) {
-      var access_token = body.access_token;
+      var accessToken = body.access_token;
       res.send({
-        'access_token': access_token
+        'access_token': accessToken
       });
     }
   });
@@ -151,9 +151,9 @@ app.get('/spotify/engagement', async (req, res, next) => {
 
   const userId = req.query.userId;
   const auth_header = req.headers.authorization;
-  const access_token = auth_header.substring(7, auth_header.length).trim();
+  const accessToken = auth_header.substring(7, auth_header.length).trim();
 
-  const userDetailsHolder = new UserDetailsHolder(access_token, userId);
+  const userDetailsHolder = new UserDetailsHolder(accessToken, userId);
   const musicEngagementResponse = await musicEngagementRepo.getUserMusicEngagement(userDetailsHolder);
 
   res.status(200)
