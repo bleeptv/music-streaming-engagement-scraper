@@ -1,7 +1,3 @@
-  #login-title {
-    margin: 0 auto;
-  }
-
   #logout-btn {
     background-color: transparent;
     color: darkcyan;
@@ -11,12 +7,34 @@
   }
 
   #spotify-login {
-    width: 20%;
-    height: 40px;
+    width: 100%;
+    height: 38px;
     background-color: #1ED760;
-    border-color: transparent;
-    margin-top: 30%;
-    font-weight: 600;
+    border: none;
+    border-radius: 5px;
+    margin-top: 10%;
+    font-size: 17px;
+    font-weight: 400;
+  }
+
+  #spotify-login a {
+    text-decoration: none;
+    color: white;
+  }
+
+  #apple-login {
+    width: 100%;
+    height: 40px;
+    margin-top: 20px;
+    border: 0;
+    background: url("./images/appleid_button_2x.png");
+    background-size: 100%;
+  }
+
+  #sign-in-buttons {
+    width: 250px;
+    margin: 0 auto;
+    margin-top: 10%;
   }
 
   .small-denom {
@@ -26,7 +44,9 @@
   .container {
     margin-top: 80px;
     color: white;
-    text-align: center;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
   }
 
   body {
@@ -84,6 +104,13 @@
   #login,
   #loggedin {
     display: none;
+  }
+
+  #spotify-button-logo {
+    width: 16px;
+    height: 16px;
+    background-size: 100%;
+    margin-right: 10px;
   }
 
   img {
