@@ -123,13 +123,13 @@
   .progress-line,
   .progress-line:before {
     height: 5px;
-    width: 40%;
+    width: 100%;
     margin: 0;
   }
 
   #loading {
-    margin-top: 40%;
-    margin-left: 40%;
+    margin-top: 30%;
+    width: 40%;
   }
 
   .progress-line {
