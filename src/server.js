@@ -54,7 +54,7 @@ app.use(express.static(__dirname + '/public'))
   .use(cors())
   .use(cookieParser());
 
-app.get('/login?', function (req, res, next) {
+app.get('/login', function (req, res, next) {
 
   var state = generateRandomString(16);
   res.cookie(stateKey, state);
