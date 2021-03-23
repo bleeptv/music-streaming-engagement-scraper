@@ -1,18 +1,21 @@
 
 /**
- * Generates a timestamp in a string format
+ * Generates a series timestamp objects
  */
 class TimestampGenerator {
 
     /**
-     * Generate a timestamp before the first hour selected current day
+     * Generate a timestamp session object for a specific date
      * 
-     * @returns The total milliseconds at the start of selected current day
+     * @param {Date} chosenDate 
+     * @returns An object containing the business date and timestamp value for a specific date
      */
-    getTimestampWithoutTime(currentDate) {
-        currentDate.setHours(0, 0, 0, 0);
-        return currentDate.getTime().toString();
+    generateSessionTimestampObject(chosenDate) {
+        return {
+            businessDate: chosenDate.toLocaleDateString('en-CA'),
+            sessionTimeStamp: chosenDate.getTime()
+        };
     }
-} 
+}
 
 module.exports = TimestampGenerator;
