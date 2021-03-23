@@ -1,6 +1,8 @@
 const PlaylistType = require('../entity/playlist_type');  
 const UserDetailsHolder = require('../entity/user_details_holder');
 const OBJECT_TRUNCATE_LIMIT = 0;
+const TimestampGenerator = require('../../presentation/timestamp_generator');
+const timestampGenerator = new TimestampGenerator();
 
 /**
  * 
@@ -13,7 +15,8 @@ class MusicEngagementRepository {
 
     /**
      * 
-     * @param {*} objCollection 
+     * @param {Object} objCollection 
+     * @param {Number} truncateLimit 
      * @returns 
      */
     generateTallyObject(objCollection, truncateLimit=0) {
@@ -51,20 +54,21 @@ class MusicEngagementRepository {
      */
     async getUserMusicEngagement(userDetailsHolder) {
         const self = this;
+        const timeStampObject = timestampGenerator.generateSessionTimestampObject(new Date());
     
         // Get number of playlists created
         const breadthOfMusicEngagement = new Promise(resolve => {
-            self.getBreadthOfEngagement(userDetailsHolder, resolve);
+            self.getBreadthOfEngagement(userDetailsHolder, timeStampObject, resolve);
         });
     
         // Get recently played tracks for songs in heavy rotation, as well as regular engagement
         const depthOfMusicEngagment = new Promise(resolve => {
-            self.getDepthOfMusicEngagement(userDetailsHolder, resolve);
+            self.getDepthOfMusicEngagement(userDetailsHolder, timeStampObject, resolve);
         });
     
         // Get Following for all artists
         const followingEngagmentDetails = new Promise(resolve => {
-            self.getFollowingEngagmentDetails(userDetailsHolder, resolve);
+            self.getFollowingEngagmentDetails(userDetailsHolder, timeStampObject, resolve);
         });
     
         const [breadthResult, depthResult, followingResult] = await Promise.all([breadthOfMusicEngagement, depthOfMusicEngagment, followingEngagmentDetails]);
@@ -96,11 +100,13 @@ class MusicEngagementRepository {
     /**
      * 
      * @param {UserDetailsHolder} userDetailsHolder 
+     * @param {Object} timeStampObject 
+     * @param {*} onRequestCompleted 
      */
-    getBreadthOfEngagement(userDetailsHolder, onRequestCompleted) {
+    getBreadthOfEngagement(userDetailsHolder, timeStampObject, onRequestCompleted) {
         const self = this;
     
-        this.spotifyApiClient.getCurrentUsersPlaylists(userDetailsHolder, async (error, playlistCollectionResult) => {
+        this.spotifyApiClient.getCurrentUsersPlaylists(userDetailsHolder, timeStampObject, async (error, playlistCollectionResult) => {
 
             if(error) throw error;
             
@@ -117,7 +123,7 @@ class MusicEngagementRepository {
     
             playlistCollectionResult.playlistIds.forEach((playlistId) => {
                 const tracksFetchRequest = new Promise((resolve) => {
-                    this.spotifyApiClient.getTracksFromPlaylist(userDetailsHolder, playlistId, (error, playlistTracksResult) => {
+                    this.spotifyApiClient.getTracksFromPlaylist(userDetailsHolder, timeStampObject, playlistId, (error, playlistTracksResult) => {
 
                         if(error) {
                             resolve(error);
@@ -155,7 +161,7 @@ class MusicEngagementRepository {
 
             musicEngagementBreadthResult["total_playlist_followers"] = totalPlaylistFollowersCount;
 
-            self.getArtistProfiles(userDetailsHolder, artistIds, PlaylistType.ALL, (error, genresTally) => {
+            self.getArtistProfiles(userDetailsHolder, timeStampObject, artistIds, PlaylistType.ALL, (error, genresTally) => {
 
                 if(error) throw error
 
@@ -170,11 +176,13 @@ class MusicEngagementRepository {
     /**
      * 
      * @param {UserDetailsHolder} userDetailsHolder 
+     * @param {Object} timeStampObject 
+     * @param {*} onRequestCompleted 
      */
-    getDepthOfMusicEngagement(userDetailsHolder, onRequestCompleted) {
+    getDepthOfMusicEngagement(userDetailsHolder, timeStampObject, onRequestCompleted) {
         const self = this;
     
-        this.spotifyApiClient.getMostRecentTracks(userDetailsHolder, (error, totalRecentTracksDetails) => {
+        this.spotifyApiClient.getMostRecentTracks(userDetailsHolder, timeStampObject, (error, totalRecentTracksDetails) => {
 
             if(error) throw error;
             
@@ -193,7 +201,7 @@ class MusicEngagementRepository {
             const mostPlayedSongs = self.generateTallyObject(recentlyPlayedTrackNames);
             musicEngagementDepthResult["recent_most_played_tracks"] = self.truncateObject(mostPlayedSongs, OBJECT_TRUNCATE_LIMIT);
     
-            self.getArtistProfiles(userDetailsHolder, artistIds, PlaylistType.RECENTLY_PLAYED, (error, genresTally) => {
+            self.getArtistProfiles(userDetailsHolder, timeStampObject, artistIds, PlaylistType.RECENTLY_PLAYED, (error, genresTally) => {
 
                 if(error) throw error;
 
@@ -206,16 +214,19 @@ class MusicEngagementRepository {
     
     /**
      * 
-     * @param {Set} artistIds A set of Artist IDS which need their 
-     * @param {String} playlistTypeValue 
+     * @param {UserDetailsHolder} userDetailsHolder 
+     * @param {Object} timeStampObject 
+     * @param {Set} artistIds 
+     * @param {PlaylistType} playlistTypeValue 
+     * @param {*} onComplete 
      */
-    getArtistProfiles(userDetailsHolder, artistIds, playlistTypeValue, onComplete){
+    getArtistProfiles(userDetailsHolder, timeStampObject, artistIds, playlistTypeValue, onComplete){
         const self = this;
         const artistIdsArray = Array.from(artistIds);
         const trimmedArtistsIds = artistIdsArray.length > 50 ? artistIdsArray.slice(0, 50) : artistIdsArray;
         
         // Get the music genres I'm into regularly (artists, genres)
-        this.spotifyApiClient.getMusicGenresPerArtist(userDetailsHolder, trimmedArtistsIds.join(","), (error, musicGenres) => {    
+        this.spotifyApiClient.getMusicGenresPerArtist(userDetailsHolder, timeStampObject, trimmedArtistsIds.join(","), (error, musicGenres) => {    
             // Get genres I play the most
             if(error) return onComplete(error, null);
 
@@ -227,9 +238,11 @@ class MusicEngagementRepository {
     /**
      * 
      * @param {UserDetailsHolder} userDetailsHolder 
+     * @param {Object} timeStampObject 
+     * @param {*} onRequestComplete 
      */
-    getFollowingEngagmentDetails(userDetailsHolder, onRequestComplete) {
-        this.spotifyApiClient.getFollowedArtists(userDetailsHolder, (error, followedArtistsCollection) => {
+    getFollowingEngagmentDetails(userDetailsHolder, timeStampObject, onRequestComplete) {
+        this.spotifyApiClient.getFollowedArtists(userDetailsHolder, timeStampObject, (error, followedArtistsCollection) => {
 
             if(error) throw error;
             

@@ -3,14 +3,11 @@ const endpointUrl = "https://api.spotify.com/v1";
 const SpotifyDatasetManager = require('../../persistence/persistence_manager');
 const folderNameZip = "datasets";
 const folderPath = "datasets";
-const TimestampGenerator = require('../../presentation/timestamp_generator');
-const timestampGenerator = new TimestampGenerator();
 const dataManager = new SpotifyDatasetManager(folderNameZip, folderPath);
 
 class SpotifyApiClient {
 
   constructor() {
-    this.currentDateTimestamp = timestampGenerator.getTimestampWithoutTime(new Date()); 
     this.DEFAULT_MARKET = "ES";
     this.userIdLenghtLimit = 4; //Arbitrarily chosen number of characters in a user id
   }
@@ -18,12 +15,10 @@ class SpotifyApiClient {
   /**
    * 
    * @param {UserDetailsHolder} userDetailsHolder 
+   * @param {Object} timeStampObject 
    * @param {*} onComplete 
    */
-  getCurrentUsersPlaylists(userDetailsHolder, onComplete) {
-
-    const self = this;
-    const truncatedUserId = self.truncateUserId(userDetailsHolder.userId, self.userIdLenghtLimit);
+  getCurrentUsersPlaylists(userDetailsHolder, timeStampObject, onComplete) {
 
     let totalTracksCount = 0;
 
@@ -59,8 +54,8 @@ class SpotifyApiClient {
             totalTracksCount += playlist["tracks"]["total"];
           });
 
-          dataManager.saveFile(`spotify/${self.currentDateTimestamp}/${truncatedUserId}/playlists` , "created", createdPlaylists);
-          dataManager.saveFile(`spotify/${self.currentDateTimestamp}/${truncatedUserId}/playlists` , "saved", savedPlaylists);
+          dataManager.saveFile(`spotify/${timeStampObject.businessDate}/${userDetailsHolder.hashedUserId}/playlists` , `${timeStampObject.sessionTimeStamp}_created`, createdPlaylists);
+          dataManager.saveFile(`spotify/${timeStampObject.businessDate}/${userDetailsHolder.hashedUserId}/playlists` , `${timeStampObject.sessionTimeStamp}_saved`, savedPlaylists);
         }
 
         const playlistResult = {
@@ -78,12 +73,13 @@ class SpotifyApiClient {
 
   /**
    * 
-   * @param {*} playlistId 
+   * @param {UserDetailsHolder} userDetailsHolder 
+   * @param {Object} timeStampObject 
+   * @param {String} playlistId 
    * @param {*} onComplete 
    */
-  getTracksFromPlaylist(userDetailsHolder, playlistId, onComplete) {
+  getTracksFromPlaylist(userDetailsHolder, timeStampObject, playlistId, onComplete) {
     const self = this;
-    const truncatedUserId = self.truncateUserId(userDetailsHolder.userId, self.userIdLenghtLimit);
 
     var options = {
       url: `${endpointUrl}/playlists/${playlistId}/tracks?market=${this.DEFAULT_MARKET}&limit=50`,
@@ -101,7 +97,10 @@ class SpotifyApiClient {
         const musicTracks = body["items"] !== null ? body["items"] : [];
 
         if(musicTracks.length > 0) {
-          dataManager.saveFile(`spotify/${self.currentDateTimestamp}/${truncatedUserId}`, `playlist_${playlistId}_tracks`, body);
+          dataManager.saveFile(
+            `spotify/${timeStampObject.businessDate}/${userDetailsHolder.hashedUserId}`, 
+            `${timeStampObject.sessionTimeStamp}_playlist_${playlistId}_tracks`, 
+            body);
         }
 
         onComplete(null, self.extractMusicTrackDetails(musicTracks));
@@ -113,11 +112,12 @@ class SpotifyApiClient {
   /**
    * Get the 50 music tracks from the current user's history
    * 
-   * @param onComplete Callback to return the total of the tracks played within a specific time frame. Defaults to a max of 50 tracks
+   * @param {UserDetailsHolder} userDetailsHolder 
+   * @param {Object} timeStampObject 
+   * @param {*} onComplete Callback to return the total of the tracks played within a specific time frame. Defaults to a max of 50 tracks
    */
-  getMostRecentTracks(userDetailsHolder, onComplete) {
+  getMostRecentTracks(userDetailsHolder, timeStampObject, onComplete) {
     const self = this;
-    const truncatedUserId = self.truncateUserId(userDetailsHolder.userId, self.userIdLenghtLimit);
 
     var options = {
       url: `${endpointUrl}/me/player/recently-played?limit=50`,
@@ -134,7 +134,10 @@ class SpotifyApiClient {
       } else {
         const musicTracks = body["items"] !== null ? body["items"] : [];
         if(musicTracks.length > 0) {
-          dataManager.saveFile(`spotify/${self.currentDateTimestamp}/${truncatedUserId}` , "recently_played_tracks", body);
+          dataManager.saveFile(
+            `spotify/${timeStampObject.businessDate}/${userDetailsHolder.hashedUserId}` , 
+            `${timeStampObject.sessionTimeStamp}_recently_played_tracks`, 
+            body);
         }
         onComplete(null, self.extractMusicTrackDetails(musicTracks));
       }
@@ -142,14 +145,15 @@ class SpotifyApiClient {
   }
 
   /**
-   * Get the genres based on the list of music artist IDs passed in
    * 
-   * @param {*} musicArtistIds 
+   * @param {UserDetailsHolder} userDetailsHolder 
+   * @param {Object} timeStampObject 
+   * @param {String} musicArtistIdsString 
    * @param {*} onComplete 
+   * @param {PlaylistType} playlistType 
+   * @returns 
    */
-  getMusicGenresPerArtist(userDetailsHolder, musicArtistIdsString, onComplete, playlistType = "") {
-    const self = this;
-    const truncatedUserId = self.truncateUserId(userDetailsHolder.userId, self.userIdLenghtLimit);
+  getMusicGenresPerArtist(userDetailsHolder, timeStampObject, musicArtistIdsString, onComplete, playlistType = "") {
     const genreCollection = [];
 
     if(musicArtistIdsString.length == 0) {
@@ -178,7 +182,10 @@ class SpotifyApiClient {
               genreCollection.push(genre);
             })
           });
-          dataManager.saveFile(`spotify/${self.currentDateTimestamp}/${truncatedUserId}` , `artists_${playlistType}`, body);
+          dataManager.saveFile(
+            `spotify/${timeStampObject.businessDate}/${userDetailsHolder.hashedUserId}` , 
+            `${timeStampObject.sessionTimeStamp}_artists_${playlistType}`, 
+            body);
         }
       
         onComplete(null, genreCollection);
@@ -190,8 +197,9 @@ class SpotifyApiClient {
 
   /**
    * 
-   * @param {*} playlistId 
-   * @param {*} onCompleted 
+   * @param {UserDetailsHolder} userDetailsHolder
+   * @param {String} playlistId 
+   * @param {*} onComplete 
    */
   getFollowersForPlaylistId(userDetailsHolder, playlistId, onComplete) {
     var options = {
@@ -213,15 +221,15 @@ class SpotifyApiClient {
     });
   }
 
+  
   /**
    * Get the artists followed by the current user
    * 
-   * @param onComplete Callback to pass over the result of the followed artists query
+   * @param {UserDetailsHolder} userDetailsHolder 
+   * @param {Object} timeStampObject 
+   * @param {*} onComplete Callback to pass over the result of the followed artists query
    */
-  getFollowedArtists(userDetailsHolder, onComplete) {
-    const self = this;
-    const truncatedUserId = self.truncateUserId(userDetailsHolder.userId, self.userIdLenghtLimit);
-
+  getFollowedArtists(userDetailsHolder, timeStampObject, onComplete) {
     const artistDataCollection = [];
 
     var options = {
@@ -253,7 +261,9 @@ class SpotifyApiClient {
             artistDataCollection.push(artistDetails);
           });
 
-          dataManager.saveFile(`spotify/${self.currentDateTimestamp}/${truncatedUserId}` , "followed_artists", body);
+          dataManager.saveFile(
+            `spotify/${timeStampObject.businessDate}/${userDetailsHolder.hashedUserId}` , 
+            `${timeStampObject.sessionTimeStamp}_followed_artists`, body);
         }
         
         onComplete(null, artistDataCollection);
@@ -294,11 +304,6 @@ class SpotifyApiClient {
     });
 
     return extractedMusicTracks;
-  }
-
-  truncateUserId(userId, truncationLimit) {
-    const limit = Math.min(userId.length, truncationLimit);
-    return userId.substring(userId.length - limit, userId.length);
   }
 }
 
