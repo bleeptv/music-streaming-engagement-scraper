@@ -13,7 +13,10 @@
   <div class="container">
     <div id="login">
       <h1 id="login-title">View your music engagement on major music platforms</h1>
-      <a href="/login" class="btn btn-primary" id="spotify-login"> Log in with Spotify</a>
+      <div id="sign-in-buttons">
+        <button id="spotify-login" onclick="location.href='/login?platform=spotify'"><img id="spotify-button-logo" src="./images/spotify.png" alt=""/>Sign in with Spotify</button>
+        <button id="apple-login" onclick="location.href='/login?platform=apple'"></button>
+      </div>  
     </div>
     <div id="loading">
       <div class="progress-line"></div>
