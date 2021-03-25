@@ -15,9 +15,9 @@ class DatasetPersistenceManager {
 
     /**
      * 
-     * @param {String} folderName Folder to save the specific dataset to
-     * @param {String} filename 
-     * @param {Object} json 
+     * @param {String} folderName Folder to save the specific dataset to persist on the file manager
+     * @param {String} filename Name of the file to persist
+     * @param {Object} json The contents of the file to persist
      */
     saveFile(folderName, filename, json) {
         const filePath = `${this.datasetPath}/${folderName}/${filename}.json`;
