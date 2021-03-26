@@ -33,8 +33,54 @@
         });
     }
 
-    getFolderContents = (folderName, onGetFolderContents) => {
-        //TODO: Implement in Jira ticket #B2MVE-982
+    /**
+     * 
+     * @param {String} folderName 
+     * @param {CallBack} onGetFolderContents 
+     */
+    getFolderContentsAsync = (folderName, onGetFolderContents) => {
+        const self = this;
+
+        const s3Params = {
+            Bucket: this.s3BucketName,
+            Prefix: folderName
+        };
+
+        this.s3.listObjectsV2(s3Params, async (error, folderData) => {
+            if(error) throw error;
+
+            const fileContentsRequests = folderData.Contents.map(s3Object => self.createRetrievalRequest(s3Object));
+            const fileCollection = await Promise.all(fileContentsRequests);
+            onGetFolderContents(fileCollection);
+        });
+    }
+
+    /**
+     * 
+     * @param {*} s3Object 
+     * @returns 
+     */
+    createRetrievalRequest(s3Object) {
+        const self = this;
+        const s3ObjectFileName = s3Object.Key;
+
+        const fileParams = {
+            Bucket: self.s3BucketName,
+            Key: s3ObjectFileName
+        };
+
+        return new Promise(resolve => {
+            this.s3.getObject(fileParams, (fileError, fileData) => {
+                if(fileError) throw fileError;
+
+                const fileObject = {
+                    fileName: s3ObjectFileName,
+                    content: fileData.Body.toString()
+                };
+
+                resolve(fileObject);
+            });
+        });
     }
 }
 
