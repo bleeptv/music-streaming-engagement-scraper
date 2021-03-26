@@ -159,15 +159,20 @@ app.get('/spotify/engagement', async (req, res, next) => {
 
 app.get("/general/datasets", (req, res, next) => {
 
-  const {
-    folderName,
-    zippedDatasets
-  } = datasetManager.zipDataSets();
+  const sourceFolderName = "datasets";
 
-  res.set("Content-Type", "application/octet-stream");
-  res.set("Content-Disposition", `attachment; filename=${folderName}`);
-  res.set("Content-Length", zippedDatasets.length);
-  res.send(zippedDatasets);
+  datasetManager.retrieveZippedFolderAsync(sourceFolderName, sourceFolderName, (datasetDetails) => {
+    
+    const {
+      folderName,
+      zippedDatasets
+    } = datasetDetails;
+   
+    res.set("Content-Type", "application/octet-stream");
+    res.set("Content-Disposition", `attachment; filename=${folderName}`);
+    res.set("Content-Length", zippedDatasets.length);
+    res.send(zippedDatasets);
+  });
 
 });
 
