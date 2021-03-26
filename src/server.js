@@ -13,18 +13,14 @@ var request = require('request'); // "Request" library
 var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
-
-const folderNameZip = "spotify_datasets"
-const folderPath = "datasets";
-const SpotifyDatasetManager = require('../persistence/persistence_manager');
-const dataManager = new SpotifyDatasetManager(folderNameZip, folderPath);
+const datasetManager =  require('../persistence/dataset_manager_instance');
 
 const client_id = process.env.SPOTIFY_CLIENT_ID // Your client id
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET; // Your secret
 const redirect_uri = process.env.SPOTIFY_REDIRECT_URI; // Your redirect uri
 
 const SpotifyApiClient = require('../data/api_client/spotify_client');
-const apiClient = new SpotifyApiClient();
+const apiClient = new SpotifyApiClient(datasetManager);
 const MusicEngagementRepository = require("../data/repository/music_engagement_repository");
 const musicEngagementRepo = new MusicEngagementRepository(apiClient);
 const UserDetailsHolder = require('../data/entity/user_details_holder');
@@ -163,15 +159,20 @@ app.get('/spotify/engagement', async (req, res, next) => {
 
 app.get("/general/datasets", (req, res, next) => {
 
-  const {
-    folderName,
-    zippedDatasets
-  } = dataManager.zipDataSets();
+  const sourceFolderName = "datasets";
 
-  res.set("Content-Type", "application/octet-stream");
-  res.set("Content-Disposition", `attachment; filename=${folderName}`);
-  res.set("Content-Length", zippedDatasets.length);
-  res.send(zippedDatasets);
+  datasetManager.retrieveZippedFolderAsync(sourceFolderName, sourceFolderName, (datasetDetails) => {
+    
+    const {
+      folderName,
+      zippedDatasets
+    } = datasetDetails;
+   
+    res.set("Content-Type", "application/octet-stream");
+    res.set("Content-Disposition", `attachment; filename=${folderName}`);
+    res.set("Content-Length", zippedDatasets.length);
+    res.send(zippedDatasets);
+  });
 
 });
 
