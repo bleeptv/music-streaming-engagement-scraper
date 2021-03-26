@@ -34,19 +34,20 @@
     }
 
     /**
+     * Get the contents of an S3 Bucket folder asynchronously
      * 
-     * @param {String} folderName 
-     * @param {CallBack} onGetFolderContents 
+     * @param {String} folderName Folder name to retrieve from Amazon S3
+     * @param {CallBack} onGetFolderContents Triggers once it has acquired all the files under the chosen folder
      */
     getFolderContentsAsync = (folderName, onGetFolderContents) => {
         const self = this;
 
         const s3Params = {
-            Bucket: this.s3BucketName,
+            Bucket: self.s3BucketName,
             Prefix: folderName
         };
 
-        this.s3.listObjectsV2(s3Params, async (error, folderData) => {
+        self.s3.listObjectsV2(s3Params, async (error, folderData) => {
             if(error) throw error;
 
             const fileContentsRequests = folderData.Contents.map(s3Object => self.createRetrievalRequest(s3Object));
@@ -56,13 +57,14 @@
     }
 
     /**
+     * Creates a Promise to retrieve an object from an S3 Bucket using it's metadata
      * 
-     * @param {*} s3Object 
-     * @returns 
+     * @param {*} s3ObjectMetaData S3 Object metadata pointing to a file in an an S3 Bucket 
+     * @returns a promise to download the object from the S3 Bucket
      */
-    createRetrievalRequest(s3Object) {
+    createRetrievalRequest(s3ObjectMetaData) {
         const self = this;
-        const s3ObjectFileName = s3Object.Key;
+        const s3ObjectFileName = s3ObjectMetaData.Key;
 
         const fileParams = {
             Bucket: self.s3BucketName,
