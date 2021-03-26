@@ -1,13 +1,10 @@
 const request = require('request'); // "Request" library
 const endpointUrl = "https://api.spotify.com/v1";
-const SpotifyDatasetManager = require('../../persistence/persistence_manager');
-const folderNameZip = "datasets";
-const folderPath = "datasets";
-const dataManager = new SpotifyDatasetManager(folderNameZip, folderPath);
 
 class SpotifyApiClient {
 
-  constructor() {
+  constructor(datasetManager) {
+    this.datasetManager = datasetManager;
     this.DEFAULT_MARKET = "ES";
   }
 
@@ -19,6 +16,7 @@ class SpotifyApiClient {
    */
   getCurrentUsersPlaylists(userDetailsHolder, timestampObject, onComplete) {
 
+    const self = this;
     let totalTracksCount = 0;
 
     var options = {
@@ -53,8 +51,8 @@ class SpotifyApiClient {
             totalTracksCount += playlist["tracks"]["total"];
           });
 
-          dataManager.saveFile(`spotify/${timestampObject.businessDate}/${userDetailsHolder.hashedUserId}/playlists` , `${timestampObject.sessionTimeStamp}_created`, createdPlaylists);
-          dataManager.saveFile(`spotify/${timestampObject.businessDate}/${userDetailsHolder.hashedUserId}/playlists` , `${timestampObject.sessionTimeStamp}_saved`, savedPlaylists);
+          self.datasetManager.saveFile(`spotify/${timestampObject.businessDate}/${userDetailsHolder.hashedUserId}/playlists` , `${timestampObject.sessionTimeStamp}_created`, createdPlaylists);
+          self.datasetManager.saveFile(`spotify/${timestampObject.businessDate}/${userDetailsHolder.hashedUserId}/playlists` , `${timestampObject.sessionTimeStamp}_saved`, savedPlaylists);
         }
 
         const playlistResult = {
@@ -96,7 +94,7 @@ class SpotifyApiClient {
         const musicTracks = body["items"] !== null ? body["items"] : [];
 
         if(musicTracks.length > 0) {
-          dataManager.saveFile(
+          self.datasetManager.saveFile(
             `spotify/${timestampObject.businessDate}/${userDetailsHolder.hashedUserId}`, 
             `${timestampObject.sessionTimeStamp}_playlist_${playlistId}_tracks`, 
             body);
@@ -133,7 +131,7 @@ class SpotifyApiClient {
       } else {
         const musicTracks = body["items"] !== null ? body["items"] : [];
         if(musicTracks.length > 0) {
-          dataManager.saveFile(
+          self.datasetManager.saveFile(
             `spotify/${timestampObject.businessDate}/${userDetailsHolder.hashedUserId}` , 
             `${timestampObject.sessionTimeStamp}_recently_played_tracks`, 
             body);
@@ -153,6 +151,7 @@ class SpotifyApiClient {
    * @returns 
    */
   getMusicGenresPerArtist(userDetailsHolder, timestampObject, musicArtistIdsString, onComplete, playlistType = "") {
+    const self = this;
     const genreCollection = [];
 
     if(musicArtistIdsString.length == 0) {
@@ -181,7 +180,7 @@ class SpotifyApiClient {
               genreCollection.push(genre);
             })
           });
-          dataManager.saveFile(
+          self.datasetManager.saveFile(
             `spotify/${timestampObject.businessDate}/${userDetailsHolder.hashedUserId}` , 
             `${timestampObject.sessionTimeStamp}_artists_${playlistType}`, 
             body);
@@ -229,6 +228,7 @@ class SpotifyApiClient {
    * @param {*} onComplete Callback to pass over the result of the followed artists query
    */
   getFollowedArtists(userDetailsHolder, timestampObject, onComplete) {
+    const self = this;
     const artistDataCollection = [];
 
     var options = {
@@ -260,7 +260,7 @@ class SpotifyApiClient {
             artistDataCollection.push(artistDetails);
           });
 
-          dataManager.saveFile(
+          self.datasetManager.saveFile(
             `spotify/${timestampObject.businessDate}/${userDetailsHolder.hashedUserId}` , 
             `${timestampObject.sessionTimeStamp}_followed_artists`, body);
         }
