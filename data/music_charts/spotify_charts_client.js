@@ -27,8 +27,8 @@ class SpotifyChartsClient {
         chartsDate = "latest"
     ) => {
 
-        this.checkTimeFrame(timeframe);
-        const top200sUrl = `https://spotifycharts.com/regional/${regionCode}/${timeframe}/${chartsDate}/download`;
+        const timeframeDate = this.generateTimeFrameDate(chartsDate, timeframe);
+        const top200sUrl = `https://spotifycharts.com/regional/${regionCode}/${timeframe}/${timeframeDate}/download`;
         this.getChartsData(top200sUrl, resultCallback);
     }
 
@@ -48,8 +48,8 @@ class SpotifyChartsClient {
         chartsDate = "latest"
     ) => {
 
-        this.checkTimeFrame(timeframe);
-        const viral50Url = `https://spotifycharts.com/viral/${regionCode}/${timeframe}/${chartsDate}/download`;
+        const timeframeDate = this.generateTimeFrameDate(chartsDate, timeframe);
+        const viral50Url = `https://spotifycharts.com/viral/${regionCode}/${timeframe}/${timeframeDate}/download`;
         this.getChartsData(viral50Url, resultCallback);
     }
 
@@ -62,25 +62,40 @@ class SpotifyChartsClient {
     getChartsData = (chartsUrl, resultCallback) => {
         const self = this;
 
-        self.httpClient.get(chartsUrl, async (error, response, body) => {
-            if(error) throw error;
-            
-            if(body === undefined) return resultCallback(null);
+        const options = {
+            url: chartsUrl,
+            json: false
+        }
 
+        self.httpClient.get(options, async (error, response, body) => {
+            if(error) throw error;
+
+            console.log(response.statusCode)
+            if(response.statusCode !== 200) return resultCallback(null);
             resultCallback(await self.csvToJsonConverter.fromString(body));
         });
     }
 
     /**
-     * Perform a check on the time frame variable to make sure it's 1 of 2 options: DAILY or WEEKLY
      * 
-     * @param {String} timeframe 
+     * @param {String} chosenDate 
+     * @param {String} timeframe
+     * @returns 
      */
-    checkTimeFrame = (timeframe) => {
-        if(timeframe !== SpotifyChartTimeFrame.DAILY || timeframe !== SpotifyChartTimeFrame.WEEKLY) {
-            throw Error("Invalid Timeframe selected")
-        }
+    generateTimeFrameDate = (chosenDate, timeframe) => {
+        if(chosenDate === "latest" || timeframe === SpotifyChartTimeFrame.DAILY) return chosenDate
+        
+        return `${chosenDate}--${chosenDate}`
     }
 }
+
+const client = new SpotifyChartsClient(require('request'));
+client.getTop200Async((result) => {
+        console.log(result);
+    },
+    timeframe = SpotifyChartTimeFrame.WEEKLY,
+    regionCode = "za",
+    chartsDate = "2021-03-12"
+)
 
 module.exports = SpotifyChartsClient;
