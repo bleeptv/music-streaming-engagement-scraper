@@ -6,6 +6,7 @@ class SpotifyApiClient {
   constructor(datasetManager) {
     this.datasetManager = datasetManager;
     this.DEFAULT_MARKET = "ES";
+    this.playlistBatchLimit = process.env.PLAYLIST_BATCH_LIMIT;
   }
 
   /**
@@ -20,7 +21,7 @@ class SpotifyApiClient {
     let totalTracksCount = 0;
 
     var options = {
-      url: `${endpointUrl}/me/playlists?limit=50`,
+      url: `${endpointUrl}/me/playlists?limit=${this.playlistBatchLimit}`,
       headers: {
         'Authorization': 'Bearer ' + userDetailsHolder.accessToken
       },
