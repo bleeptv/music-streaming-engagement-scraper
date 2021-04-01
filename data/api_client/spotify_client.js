@@ -31,6 +31,8 @@ class SpotifyApiClient {
     // use the access token to access the Spotify Web API
     request.get(options, (error, response, body) => {
 
+      console.log("Response code for fetching current user's playlists: ", response.statusCode);
+
       if (error) {
         onComplete(error, null);
       } else {
@@ -40,7 +42,7 @@ class SpotifyApiClient {
         const savedPlaylists = [];
         const playlistIds = new Set();
 
-        if(playlists !== null && playlists.length > 0) {
+        if(playlists !== undefined && playlists.length > 0) {
           playlists.forEach(playlist => {
             if(playlist["owner"]["id"] === userDetailsHolder.userId) {
               createdPlaylists.push(playlist);
@@ -89,10 +91,12 @@ class SpotifyApiClient {
 
     request.get(options, function (error, response, body) {
 
+      console.log("Response code for fetching music tracks from all playlists: ", response.statusCode);
+
       if (error) {
         onComplete(error, null);
       } else {
-        const musicTracks = body["items"] !== null ? body["items"] : [];
+        const musicTracks = body["items"] !== undefined ? body["items"] : [];
 
         if(musicTracks.length > 0) {
           self.datasetManager.saveFile(
@@ -127,10 +131,12 @@ class SpotifyApiClient {
 
     request.get(options, function (error, response, body) {
 
+      console.log("Response code for fetching most recently played tracks: ", response.statusCode);
+
       if(error) {
         onComplete(error, null);
       } else {
-        const musicTracks = body["items"] !== null ? body["items"] : [];
+        const musicTracks = body["items"] !== undefined ? body["items"] : [];
         if(musicTracks.length > 0) {
           self.datasetManager.saveFile(
             `spotify/${timestampObject.businessDate}/${userDetailsHolder.hashedUserId}` , 
@@ -170,12 +176,13 @@ class SpotifyApiClient {
 
     request.get(options, function (error, response, body) {
 
+      console.log("Response code for fetching artists: ", response.statusCode);
       if(error) {
         onComplete(error, null);
       } else {
         const artistsResult = body["artists"];
 
-        if(artistsResult !== null && artistsResult.length > 0) {
+        if(artistsResult !== undefined && artistsResult.length > 0) {
           artistsResult.forEach(artist => {
             artist["genres"].forEach(genre => {
               genreCollection.push(genre);
@@ -185,10 +192,12 @@ class SpotifyApiClient {
             `spotify/${timestampObject.businessDate}/${userDetailsHolder.hashedUserId}` , 
             `${timestampObject.sessionTimeStamp}_artists_${playlistType}`, 
             body);
+        } else {
+          console.log("No artists found from query");
         }
       
+        console.log("Total genres in collection: ", genreCollection.length);
         onComplete(null, genreCollection);
-        
       }
     });
 
@@ -211,10 +220,12 @@ class SpotifyApiClient {
 
     request.get(options, function (error, response, body) {
 
+      console.log("Response code for fetching playlist followers count: ", response.statusCode);
+
       if(error) {
         onComplete(error, null);
       } else {
-        const followers = body["followers"] !== null ? body["followers"]["total"] : [];
+        const followers = body["followers"] !== undefined ? body["followers"]["total"] : [];
         onComplete(null, followers);
       }
     });
@@ -242,13 +253,15 @@ class SpotifyApiClient {
 
     request.get(options, function (error, response, body) {
 
+      console.log("Response code for fetching followed artists: ", response.statusCode);
+
       if(error) {
         onComplete(error, null);
       } else {
 
         const followedArtistsResult = body["artists"];
 
-        if(followedArtistsResult !== null && followedArtistsResult["items"].length > 0) {
+        if(followedArtistsResult !== undefined && followedArtistsResult["items"].length > 0) {
           const followedArtists = body["artists"]["items"];
 
           followedArtists.forEach(artist => {
