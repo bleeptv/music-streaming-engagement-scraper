@@ -1,6 +1,5 @@
 const csvToJson = require('csvtojson');
 const SpotifyChartTimeFrame = require('./entity/spotify_chart_timeframe');
-const SpotifyChartType = require('./entity/spotify_chart_type');
 
 /**
  * Fetches the top 200 (regional) or viral 50 (popular) songs on Spotify based on locale, date, and time frame
@@ -10,6 +9,7 @@ class SpotifyChartsClient {
     constructor(httpClient) {
         this.httpClient = httpClient;
         this.csvToJsonConverter = csvToJson({noheader: true});
+        this.DEFAULT_DATE_RANGE = "latest";
     }
     
     /**
@@ -21,16 +21,16 @@ class SpotifyChartsClient {
      * defaults to "global"
      * @param {String} chartsDate Date string formatted to YYYY-MM-DD. Defaults to "latest"
      */
-    getTop200Async = (
+    getTop200SongsAsync = (
         resultCallback,
-        timeframe = SpotifyChartTimeFrame.DAILY,
-        regionCode = "global", 
-        chartsDate = "latest"
+        regionCode,
+        timeframe = SpotifyChartTimeFrame.DAILY_CHARTS_TIMEFRAME,
+        chartsDate = this.DEFAULT_DATE_RANGE
     ) => {
 
         const timeframeDate = this.generateTimeFrameDate(chartsDate, timeframe);
-        const top200sUrl = `https://spotifycharts.com/regional/${regionCode}/${timeframe}/${timeframeDate}/download`;
-        this.getChartsData(top200sUrl, resultCallback);
+        const top200RegionalSongssUrl = `https://spotifycharts.com/regional/${regionCode}/${timeframe}/${timeframeDate}/download`;
+        this.getChartsData(top200RegionalSongssUrl, resultCallback);
     }
 
     /**
@@ -42,16 +42,16 @@ class SpotifyChartsClient {
      * defaults to "global"
      * @param {String} chartsDate Date string formatted to YYYY-MM-DD. Defaults to "latest"
      */
-    getViral50Async = (
+    getViral50SongsAsync = (
         resultCallback,
-        timeframe = SpotifyChartTimeFrame.DAILY,
-        regionCode = "global", 
-        chartsDate = "latest"
+        regionCode,
+        timeframe = SpotifyChartTimeFrame.DAILY_CHARTS_TIMEFRAME,
+        chartsDate = this.DEFAULT_DATE_RANGE
     ) => {
 
         const timeframeDate = this.generateTimeFrameDate(chartsDate, timeframe);
-        const viral50Url = `https://spotifycharts.com/viral/${regionCode}/${timeframe}/${timeframeDate}/download`;
-        this.getChartsData(viral50Url, resultCallback);
+        const viral50SongsUrl = `https://spotifycharts.com/viral/${regionCode}/${timeframe}/${timeframeDate}/download`;
+        this.getChartsData(viral50SongsUrl, resultCallback);
     }
 
     /**
@@ -84,7 +84,7 @@ class SpotifyChartsClient {
      * @returns 
      */
     generateTimeFrameDate = (chosenDate, timeframe) => {
-        if(chosenDate === "latest" || timeframe === SpotifyChartTimeFrame.DAILY) {
+        if(chosenDate === this.DEFAULT_DATE_RANGE || timeframe === SpotifyChartTimeFrame.DAILY_CHARTS_TIMEFRAME) {
             return chosenDate;
         }
 
