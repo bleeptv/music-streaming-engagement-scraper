@@ -31,8 +31,8 @@ class SpotifyApiClient {
     // use the access token to access the Spotify Web API
     request.get(options, (error, response, body) => {
 
-      if(response !== undefined) {
-        console.log("Response code for fetching current user's playlists: ", response.statusCode);
+      if(response !== undefined && Number(response.statusCode).inRange(400, 500)) {
+        console.error("Response code for fetching current user's playlists: ", response.statusCode);
       }
 
       if (error) {
@@ -93,7 +93,7 @@ class SpotifyApiClient {
 
     request.get(options, function (error, response, body) {
 
-      if(response !== undefined) {
+      if(response !== undefined && Number(response.statusCode).inRange(400, 500)) {
         console.log("Response code for fetching music tracks from all playlists: ", response.statusCode);
       }
 
@@ -135,8 +135,8 @@ class SpotifyApiClient {
 
     request.get(options, function (error, response, body) {
 
-      if(response !== undefined) {
-        console.log("Response code for fetching most recently played tracks: ", response.statusCode);
+      if(response !== undefined && Number(response.statusCode).inRange(400, 500)) {
+        console.error("Response code for fetching most recently played tracks: ", response.statusCode);
       }
 
       if(error) {
@@ -182,8 +182,8 @@ class SpotifyApiClient {
 
     request.get(options, function (error, response, body) {
 
-      if(response !== undefined) {
-        console.log("Response code for fetching artists: ", response.statusCode);
+      if(response !== undefined && Number(response.statusCode).inRange(400, 500)) {
+        console.error("Response code for fetching artists: ", response.statusCode);
       }
       
       if(error) {
@@ -229,8 +229,8 @@ class SpotifyApiClient {
 
     request.get(options, function (error, response, body) {
 
-      if(response !== undefined) {
-        console.log("Response code for fetching playlist followers count: ", response.statusCode);
+      if(response !== undefined && Number(response.statusCode).inRange(400, 500)) {
+        console.error("Response code for fetching playlist followers count: ", response.statusCode);
       }
 
       if(error) {
@@ -264,8 +264,8 @@ class SpotifyApiClient {
 
     request.get(options, function (error, response, body) {
 
-      if(response !== undefined) {
-        console.log("Response code for fetching followed artists: ", response.statusCode);
+      if(response !== undefined && Number(response.statusCode).inRange(400, 500)) {
+        console.error("Response code for fetching followed artists: ", response.statusCode);
       }
 
       if(error) {
@@ -307,13 +307,17 @@ class SpotifyApiClient {
   extractMusicTrackDetails(musicTrackItems) {
 
     const extractedMusicTracks = []
+    let totalUnprocessedTracks = 0;
 
     for(let index = 0; index < musicTrackItems.length; index++) {
 
       const musicTrack = musicTrackItems[index];
       const trackObject = musicTrack["track"];
 
-      if(trackObject === undefined || trackObject === null) continue;
+      if(trackObject === undefined || trackObject === null) {
+        totalUnprocessedTracks++;
+        continue;
+      } 
       
       const trackName = trackObject["name"];
       const artistDetailsCollection = []
@@ -334,6 +338,8 @@ class SpotifyApiClient {
 
       extractedMusicTracks.push(trackInformation);
     }
+    
+    if(totalUnprocessedTracks > 0) console.warn("Total number of unprocessed tracks: ", totalUnprocessedTracks);
 
     return extractedMusicTracks;
   }
