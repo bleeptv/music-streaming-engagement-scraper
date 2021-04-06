@@ -1,5 +1,6 @@
 const csvToJson = require('csvtojson');
 const SpotifyChartTimeFrame = require('./entity/spotify_chart_timeframe');
+const SpotifyChartType = require('./entity/spotify_chart_type');
 
 /**
  * Fetches the top 200 (regional) or viral 50 (popular) songs on Spotify based on locale, date, and time frame
@@ -78,24 +79,19 @@ class SpotifyChartsClient {
 
     /**
      * 
-     * @param {String} chosenDate 
-     * @param {String} timeframe
+     * @param {String} chosenDate Date chosen to fetch charts data
+     * @param {String} timeframe Either weekly or daily for charts data to fetch
      * @returns 
      */
     generateTimeFrameDate = (chosenDate, timeframe) => {
-        if(chosenDate === "latest" || timeframe === SpotifyChartTimeFrame.DAILY) return chosenDate
-        
-        return `${chosenDate}--${chosenDate}`
+        if(chosenDate === "latest" || timeframe === SpotifyChartTimeFrame.DAILY) {
+            return chosenDate;
+        }
+
+        //TODO: Handle generation for weekly values in B2MVE-1054
+
+        return `${chosenDate}--${chosenDate}`; // Formatting only works for viral 50 Spotify Charts
     }
 }
-
-const client = new SpotifyChartsClient(require('request'));
-client.getTop200Async((result) => {
-        console.log(result);
-    },
-    timeframe = SpotifyChartTimeFrame.WEEKLY,
-    regionCode = "za",
-    chartsDate = "2021-03-12"
-)
 
 module.exports = SpotifyChartsClient;
