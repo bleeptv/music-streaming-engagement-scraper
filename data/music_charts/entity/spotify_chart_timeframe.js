@@ -2,6 +2,6 @@
  * Represents different types of timeframes available on the Spotify Charts API
  */
 module.exports = Object.freeze({
-    DAILY: 'daily',
-    WEEKLY: 'weekly'
+    DAILY_CHARTS_TIMEFRAME: 'daily',
+    WEEKLY_CHARTS_TIMEFRAME: 'weekly'
 });
