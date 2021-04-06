@@ -146,7 +146,7 @@ class MusicEngagementRepository {
                         if(error) {
                             resolve(error);   
                         } else {
-                            totalPlaylistFollowersCount += followersCount;
+                            totalPlaylistFollowersCount += Number(followersCount);
                             resolve();
                         }
                     });
@@ -159,7 +159,7 @@ class MusicEngagementRepository {
             // Get first 50 music tracks in each playlist
             await Promise.all(tracksRequests.concat(playlistFollowingsRequests));
 
-            musicEngagementBreadthResult["total_playlist_followers"] = totalPlaylistFollowersCount;
+            musicEngagementBreadthResult["total_playlist_followers"] = totalPlaylistFollowersCount.toLocaleString();
 
             self.getArtistProfiles(userDetailsHolder, timestampObject, artistIds, PlaylistType.ALL, (error, genresTally) => {
 
