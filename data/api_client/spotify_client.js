@@ -339,7 +339,9 @@ class SpotifyApiClient {
       extractedMusicTracks.push(trackInformation);
     }
     
-    if(totalUnprocessedTracks > 0) console.warn("Total number of unprocessed tracks: ", totalUnprocessedTracks);
+    if(totalUnprocessedTracks > 0) {
+      console.warn("Total number of unprocessed tracks: ", totalUnprocessedTracks);
+    }
 
     return extractedMusicTracks;
   }
